@@ -1,12 +1,6 @@
-use std::ffi::{c_char, c_int, CStr, CString};
+use std::ffi::{c_char, CStr, CString};
 
 use uroborosql_fmt::{config::Config, format_sql_with_config};
-
-#[repr(C)]
-pub struct ResultForWasm {
-    code: c_int,
-    msg: *const c_char,
-}
 
 /// Formats SQL code given as char pointer `src` by WASM (JavaScript).
 ///
@@ -19,7 +13,7 @@ pub struct ResultForWasm {
 pub unsafe extern "C" fn format_sql_for_wasm(
     src: *mut c_char,
     config_json_str: *mut c_char,
-) -> ResultForWasm {
+) -> *mut *mut i8 {
     let src = CStr::from_ptr(src).to_str().unwrap().to_owned();
 
     let config_json_str = CStr::from_ptr(config_json_str).to_str().unwrap();
@@ -28,12 +22,10 @@ pub unsafe extern "C" fn format_sql_for_wasm(
     // TODO: error handling
     let result = format_sql_with_config(&src, config).unwrap();
 
-    ResultForWasm {
-        code: 0,
-        msg: CString::new(result).unwrap().into_raw(),
-    }
+    let format_result = CString::new(result).unwrap().into_raw();
+    let error_msg = CString::new("error_msg").unwrap().into_raw();
 
-    // CString::new(result).unwrap().into_raw()
+    [format_result, error_msg].as_mut_ptr()
 }
 
 /// Free the string `s` allocated by Rust.
