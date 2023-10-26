@@ -221,17 +221,31 @@ function initialize() {
     // タイマースタート
     const startTime = performance.now();
 
-    const ptr = ccall(
+    const format_sql = cwrap(
       "format_sql",
-      "number",
+      "array",
       ["string", "string"],
-      [target, config_str]
     );
+
+    const ptr = format_sql(target, config_str);
+
+    // const ptr = ccall(
+    //   "format_sql",
+    //   "array",
+    //   ["string", "string"],
+    //   [target, config_str]
+    // );
+
 
     // タイマーストップ
     const endTime = performance.now();
     // 何ミリ秒かかったかを表示する
     console.log("format complete: " + (endTime - startTime) + "ms");
+
+    console.log(UTF8ArrayToString(ptr));
+    console.log(ptr.length);
+    console.log(ptr);
+    console.log(UTF8ToString(ptr));
 
     // Module.UTF8ToString() でポインタを js の string に変換
     const res = UTF8ToString(ptr);

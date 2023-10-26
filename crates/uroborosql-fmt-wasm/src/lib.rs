@@ -5,7 +5,7 @@ static mut RESULT: &mut [u8] = &mut [0; 5000];
 use uroborosql_fmt::{config::Config, format_sql_with_config};
 
 #[no_mangle]
-pub unsafe extern "C" fn getResultAddress() -> *const u8 {
+pub unsafe extern "C" fn get_result_address() -> *const u8 {
     &RESULT[0]
 }
 
