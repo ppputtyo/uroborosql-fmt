@@ -1,7 +1,7 @@
 use std::ffi::{c_char, CStr, CString};
 
-static mut RESULT: &mut [u8] = &mut [0; 5000];
-static mut ERROR_MSG: &mut [u8] = &mut [0; 5000];
+static mut RESULT: &mut [u8] = &mut [0; 50000];
+static mut ERROR_MSG: &mut [u8] = &mut [0; 50000];
 
 use uroborosql_fmt::{config::Config, format_sql_with_config};
 
@@ -16,7 +16,6 @@ pub unsafe extern "C" fn get_result_address() -> *const u8 {
 }
 
 /// Returns the address of the error message string.
-/// If there is no error, it returns a null pointer.
 ///
 /// # Safety
 ///
@@ -40,7 +39,6 @@ pub unsafe extern "C" fn format_sql_for_wasm(src: *mut c_char, config_json_str: 
     let config_json_str = CStr::from_ptr(config_json_str).to_str().unwrap();
     let config = Config::from_json_str(config_json_str).unwrap();
 
-    // TODO: error handling
     let result = format_sql_with_config(&src, config);
 
     match result {
@@ -50,7 +48,7 @@ pub unsafe extern "C" fn format_sql_for_wasm(src: *mut c_char, config_json_str: 
                 .as_bytes_with_nul()
                 .iter()
                 .enumerate()
-                .for_each(|(i, x)| unsafe {
+                .for_each(|(i, x)| {
                     RESULT[i] = *x;
                 });
 
@@ -59,7 +57,7 @@ pub unsafe extern "C" fn format_sql_for_wasm(src: *mut c_char, config_json_str: 
                 .as_bytes_with_nul()
                 .iter()
                 .enumerate()
-                .for_each(|(i, x)| unsafe {
+                .for_each(|(i, x)| {
                     ERROR_MSG[i] = *x;
                 });
         }
@@ -69,7 +67,7 @@ pub unsafe extern "C" fn format_sql_for_wasm(src: *mut c_char, config_json_str: 
                 .as_bytes_with_nul()
                 .iter()
                 .enumerate()
-                .for_each(|(i, x)| unsafe {
+                .for_each(|(i, x)| {
                     ERROR_MSG[i] = *x;
                 });
 
@@ -78,28 +76,9 @@ pub unsafe extern "C" fn format_sql_for_wasm(src: *mut c_char, config_json_str: 
                 .as_bytes_with_nul()
                 .iter()
                 .enumerate()
-                .for_each(|(i, x)| unsafe {
+                .for_each(|(i, x)| {
                     RESULT[i] = *x;
                 });
         }
     }
-
-    // let format_result = CString::new(result).unwrap().into_raw();
-    // let error_msg = CString::new("error_msg").unwrap().into_raw();
-
-    // [format_result, error_msg].as_mut_ptr()
-}
-
-/// Free the string `s` allocated by Rust.
-///
-/// # Safety
-///
-/// This is unsafe because it uses the unsafe function
-/// [`CString::from_war()`](https://doc.rust-lang.org/std/ffi/struct.CString.html#method.from_raw).
-#[no_mangle]
-pub unsafe extern "C" fn free_format_string(s: *mut c_char) {
-    if s.is_null() {
-        return;
-    }
-    let _ = CString::from_raw(s);
 }
