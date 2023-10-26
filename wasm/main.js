@@ -221,21 +221,22 @@ function initialize() {
     // タイマースタート
     const startTime = performance.now();
 
-    const format_sql = cwrap(
-      "format_sql",
-      "array",
-      ["string", "string"],
-    );
-
-    const ptr = format_sql(target, config_str);
-
-    // const ptr = ccall(
+    // const format_sql = cwrap(
     //   "format_sql",
     //   "array",
     //   ["string", "string"],
-    //   [target, config_str]
     // );
 
+    // const ptr = format_sql(target, config_str);
+
+    ccall(
+      "format_sql",
+      undefined,
+      ["string", "string"],
+      [target, config_str]
+    );
+
+    const ptr = ccall("get_result_address", "number", [], []);
 
     // タイマーストップ
     const endTime = performance.now();
@@ -251,7 +252,7 @@ function initialize() {
     const res = UTF8ToString(ptr);
 
     // Rust 側で確保したフォーマット文字列の所有権を返す
-    ccall("free_format_string", null, ["number"], [ptr]);
+    // ccall("free_format_string", null, ["number"], [ptr]);
 
     dst_editor.setValue(res);
 

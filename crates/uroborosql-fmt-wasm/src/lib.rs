@@ -1,6 +1,7 @@
 use std::ffi::{c_char, CStr, CString};
 
 static mut RESULT: &mut [u8] = &mut [0; 5000];
+static mut ERROR_MSG: &mut [u8] = &mut [0; 5000];
 
 use uroborosql_fmt::{config::Config, format_sql_with_config};
 
@@ -12,6 +13,17 @@ use uroborosql_fmt::{config::Config, format_sql_with_config};
 #[no_mangle]
 pub unsafe extern "C" fn get_result_address() -> *const u8 {
     &RESULT[0]
+}
+
+/// Returns the address of the error message string.
+/// If there is no error, it returns a null pointer.
+///
+/// # Safety
+///
+/// This is unsafe because it returns a raw pointer.
+#[no_mangle]
+pub unsafe extern "C" fn get_error_msg_address() -> *const u8 {
+    &ERROR_MSG[0]
 }
 
 /// Formats SQL code given as char pointer `src` by WASM (JavaScript).
@@ -29,16 +41,48 @@ pub unsafe extern "C" fn format_sql_for_wasm(src: *mut c_char, config_json_str: 
     let config = Config::from_json_str(config_json_str).unwrap();
 
     // TODO: error handling
-    let result = format_sql_with_config(&src, config).unwrap();
+    let result = format_sql_with_config(&src, config);
 
-    CString::new(result)
-        .unwrap()
-        .as_bytes_with_nul()
-        .iter()
-        .enumerate()
-        .for_each(|(i, x)| unsafe {
-            RESULT[i] = *x;
-        });
+    match result {
+        Ok(result) => {
+            CString::new(result)
+                .unwrap()
+                .as_bytes_with_nul()
+                .iter()
+                .enumerate()
+                .for_each(|(i, x)| unsafe {
+                    RESULT[i] = *x;
+                });
+
+            CString::new("")
+                .unwrap()
+                .as_bytes_with_nul()
+                .iter()
+                .enumerate()
+                .for_each(|(i, x)| unsafe {
+                    ERROR_MSG[i] = *x;
+                });
+        }
+        Err(err) => {
+            CString::new(err.to_string())
+                .unwrap()
+                .as_bytes_with_nul()
+                .iter()
+                .enumerate()
+                .for_each(|(i, x)| unsafe {
+                    ERROR_MSG[i] = *x;
+                });
+
+            CString::new("")
+                .unwrap()
+                .as_bytes_with_nul()
+                .iter()
+                .enumerate()
+                .for_each(|(i, x)| unsafe {
+                    RESULT[i] = *x;
+                });
+        }
+    }
 
     // let format_result = CString::new(result).unwrap().into_raw();
     // let error_msg = CString::new("error_msg").unwrap().into_raw();
