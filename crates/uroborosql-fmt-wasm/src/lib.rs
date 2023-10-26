@@ -2,6 +2,10 @@ use std::ffi::{c_char, CStr, CString};
 
 use uroborosql_fmt::{config::Config, format_sql_with_config};
 
+extern "C" {
+    fn alert(s: *const u8, len: usize);
+}
+
 /// Formats SQL code given as char pointer `src` by WASM (JavaScript).
 ///
 /// # Safety
@@ -14,6 +18,9 @@ pub unsafe extern "C" fn format_sql_for_wasm(
     src: *mut c_char,
     config_json_str: *mut c_char,
 ) -> *mut *mut i8 {
+    let message = "Hello from Rust!\0"; // メッセージをNULL終端文字列にする
+    alert(message.as_ptr(), message.len());
+
     let src = CStr::from_ptr(src).to_str().unwrap().to_owned();
 
     let config_json_str = CStr::from_ptr(config_json_str).to_str().unwrap();
